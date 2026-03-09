@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kutubkhan Jhabuawala — RTL & Physical Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #040d0f;
+    --bg2: #071317;
+    --panel: #091c20;
+    --trace: #00e5a0;
+    --trace-dim: rgba(0,229,160,0.12);
+    --trace-glow: rgba(0,229,160,0.35);
+    --accent2: #00b4d8;
+    --accent3: #f0a500;
+    --text: #cfe8e4;
+    --muted: #5a8a82;
+    --border: rgba(0,229,160,0.18);
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── CIRCUIT BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    background: rgba(4,13,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--font-mono);
+    color: var(--trace);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+  }
+  .nav-logo span { color: var(--muted); }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--trace); }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 100px 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 64px;
+    width: 100%;
+  }
+
+  /* SVG circuit decoration */
+  .circuit-deco {
+    opacity: 0.18;
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--trace);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--trace);
+  }
+
+  h1.hero-name {
+    font-family: var(--font-head);
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #fff;
+    letter-spacing: -0.02em;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+
+  h1.hero-name .highlight {
+    color: var(--trace);
+    display: block;
+  }
+
+  .hero-sub {
+    margin-top: 20px;
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 480px;
+    font-weight: 300;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 28px;
+    animation: fadeUp 0.7s 0.3s ease both;
+  }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    color: var(--trace);
+    letter-spacing: 0.08em;
+    background: var(--trace-dim);
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--trace);
+    color: #040d0f;
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #00ffb3; box-shadow: 0 0 24px var(--trace-glow); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--trace);
+    border: 1px solid var(--trace);
+  }
+  .btn-outline:hover { background: var(--trace-dim); }
+
+  /* Hero stats */
+  .hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: fadeUp 0.8s 0.5s ease both;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px 28px;
+    min-width: 160px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--trace);
+  }
+
+  .stat-num {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    color: var(--trace);
+    line-height: 1;
+    font-weight: 400;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--trace);
+    letter-spacing: 0.1em;
+  }
+
+  .sec-title {
+    font-family: var(--font-head);
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .sec-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── ABOUT ── */
+  #about { background: var(--bg2); }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  .about-text p {
+    color: #8fb5ae;
+    font-size: 15px;
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .about-text p strong { color: var(--text); font-weight: 500; }
+
+  .info-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .info-list li {
+    display: flex;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-list .key { color: var(--muted); min-width: 80px; }
+  .info-list .val { color: var(--text); }
+
+  /* ── EXPERIENCE ── */
+  .exp-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 36px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .exp-card:hover { border-color: var(--trace); }
+
+  .exp-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--trace), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .exp-card:hover::after { opacity: 1; }
+
+  .exp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .exp-role {
+    font-family: var(--font-head);
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .exp-company {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--trace);
+    margin-top: 4px;
+  }
+
+  .exp-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .exp-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .exp-list li {
+    color: #7da8a0;
+    font-size: 14px;
+    display: flex;
+    gap: 12px;
+    font-weight: 300;
+  }
+
+  .exp-list li::before {
+    content: '▸';
+    color: var(--trace);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .exp-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .tool-chip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    background: rgba(0,229,160,0.06);
+    border: 1px solid rgba(0,229,160,0.2);
+    color: var(--trace);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── PROJECTS ── */
+  #projects { background: var(--bg2); }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .proj-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 32px;
+    position: relative;
+    transition: all 0.3s;
+    overflow: hidden;
+  }
+
+  .proj-card:hover {
+    border-color: var(--trace);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px rgba(0,229,160,0.08);
+  }
+
+  .proj-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--trace-dim);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+
+  .proj-title {
+    font-family: var(--font-head);
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .proj-desc {
+    color: #6a9a92;
+    font-size: 13px;
+    font-weight: 300;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* ── SKILLS ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .skill-group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 28px;
+  }
+
+  .skill-group-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--trace);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .skill-group-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .skill-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skill-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .skill-item::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--trace);
+    border-radius: 0;
+    flex-shrink: 0;
+    transform: rotate(45deg);
+  }
+
+  /* ── EDUCATION ── */
+  .edu-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 36px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  .edu-year {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.3;
+    padding-top: 4px;
+  }
+
+  .edu-year strong {
+    display: block;
+    font-size: 20px;
+    color: var(--trace);
+  }
+
+  .edu-title {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .edu-inst {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--trace);
+    margin: 6px 0 16px;
+  }
+
+  .edu-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── ACHIEVEMENTS ── */
+  #achievements { background: var(--bg2); }
+
+  .ach-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .ach-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .ach-card:hover { border-color: var(--accent3); }
+
+  .ach-num {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    color: var(--accent3);
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .ach-text {
+    font-size: 14px;
+    color: #7da8a0;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+  .ach-text strong { color: #fff; font-weight: 500; display: block; margin-bottom: 4px; }
+
+  /* ── CONTACT ── */
+  #contact { border-top: 1px solid var(--border); }
+
+  .contact-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  .contact-text {
+    font-size: 15px;
+    color: #6a9a92;
+    font-weight: 300;
+    margin-bottom: 32px;
+  }
+
+  .contact-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .contact-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    padding: 14px 20px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    transition: all 0.2s;
+  }
+  .contact-link:hover {
+    border-color: var(--trace);
+    color: var(--trace);
+  }
+
+  .contact-link .link-icon {
+    color: var(--trace);
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+  }
+
+  /* terminal block */
+  .terminal {
+    background: #020a0c;
+    border: 1px solid var(--border);
+    padding: 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .terminal-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .terminal-bar span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .t-red { background: #ff5f57; }
+  .t-yellow { background: #febc2e; }
+  .t-green { background: #28c840; }
+
+  .term-line { line-height: 1.8; }
+  .term-prompt { color: var(--trace); }
+  .term-cmd { color: var(--accent2); }
+  .term-out { color: #5a8a82; }
+  .term-val { color: var(--text); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 32px 48px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--trace);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 1.1s step-end infinite;
+  }
+
+  /* ── PROJECT LABEL ── */
+  .proj-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    background: rgba(0,180,216,0.08);
+    border: 1px solid rgba(0,180,216,0.2);
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 16px 0;
+  }
+
+  .fstep {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 9px;
+    background: var(--trace-dim);
+    border: 1px solid var(--border);
+    color: var(--trace);
+  }
+
+  .farrow {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  /* ── DESIGN FLOW PIPELINE ── */
+  .flow-intro {
+    color: #6a9a92;
+    font-size: 15px;
+    font-weight: 300;
+    max-width: 620px;
+    margin-bottom: 48px;
+  }
+
+  .flow-pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .fp-step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 24px 20px;
+    min-width: 130px;
+    flex: 1;
+    transition: border-color 0.2s;
+  }
+  .fp-step:hover { border-color: var(--trace); }
+
+  .fp-step--highlight {
+    border-color: var(--trace);
+    background: rgba(0,229,160,0.05);
+  }
+
+  .fp-conn {
+    width: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .fp-conn::before {
+    content: '→';
+    color: var(--trace);
+    font-size: 14px;
+    opacity: 0.5;
+  }
+
+  .fp-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .fp-name {
+    font-family: var(--font-head);
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .fp-tool {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--trace);
+    margin-bottom: 10px;
+  }
+
+  .fp-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  /* ── RESPONSIVE FLOW ── */
+  @media (max-width: 768px) {
+    .flow-pipeline { flex-direction: column; }
+    .fp-conn { width: 100%; height: 20px; }
+    .fp-conn::before { content: '↓'; }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero-inner { grid-template-columns: 1fr; padding: 0 24px; }
+    .hero-stats { flex-direction: row; flex-wrap: wrap; }
+    .container { padding: 0 24px; }
+    .about-grid, .projects-grid, .skills-grid,
+    .ach-grid, .contact-inner { grid-template-columns: 1fr; }
+    .skills-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span>//</span> KJ.portfolio</div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#flow">PD Flow</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">RTL Design &amp; Physical Design</div>
+      <h1 class="hero-name">
+        Kutubkhan
+        <span class="highlight">Jhabuawala<span class="cursor"></span></span>
+      </h1>
+      <p class="hero-sub">
+        Electronics &amp; Communication engineering student exploring RTL coding and full ASIC physical design flows — from synthesis to GDS — using open-source EDA tools on sky130A.
+      </p>
+      <div class="hero-badges">
+        <span class="badge">RTL Design</span>
+        <span class="badge">Verilog HDL</span>
+        <span class="badge">Synthesis</span>
+        <span class="badge">Place &amp; Route</span>
+        <span class="badge">OpenROAD</span>
+        <span class="badge">sky130A PDK</span>
+        <span class="badge">KLayout DRC</span>
+      </div>
+      <div class="hero-cta">
+        <a href="#projects" class="btn btn-primary">See My Work</a>
+        <a href="#flow" class="btn btn-outline">Design Flow</a>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-num">8.69</div>
+        <div class="stat-label">CGPA / 10</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">AIR<br/>#3643</div>
+        <div class="stat-label">GATE 2025 EC</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">1st</div>
+        <div class="stat-label">Dept. Rank</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-num">01</span>
+      <h2 class="sec-title">About</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="about-grid reveal">
+      <div class="about-text">
+        <p>I'm a final-year <strong>B.Tech student in Electronics and Communication Engineering</strong> at A. D. Patel Institute of Technology, graduating in 2026.</p>
+        <p>My focus is on <strong>RTL design</strong> — writing clean, synthesizable Verilog — and <strong>physical design</strong>, taking that RTL through the full ASIC backend: floorplanning, placement, clock tree synthesis, routing, and DRC sign-off.</p>
+        <p>I work with open-source EDA tools (OpenROAD, Magic VLSI, KLayout) on the sky130A PDK and prefer understanding every TCL command and tool invocation rather than relying on automated wrappers.</p>
+      </div>
+      <ul class="info-list">
+        <li><span class="key">Location</span><span class="val">Anand, Gujarat, India</span></li>
+        <li><span class="key">Email</span><span class="val">kutubkhanjhabuawala@gmail.com</span></li>
+        <li><span class="key">Phone</span><span class="val">+91 8799407694</span></li>
+        <li><span class="key">Degree</span><span class="val">B.Tech ECE — 2022–2026</span></li>
+        <li><span class="key">Focus</span><span class="val">VLSI / ASIC Design &amp; Verification</span></li>
+        <li><span class="key">LinkedIn</span><span class="val">Kutubkhan Jhabuawala</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">02</span>
+      <h2 class="sec-title">Experience</h2>
+      <div class="sec-line"></div>
+    </div>
+      <div class="exp-card reveal">
+      <div class="exp-header">
+        <div>
+          <div class="exp-role">VLSI Summer Intern — Digital Design</div>
+          <div class="exp-company">eInfochips (An Arrow Company)</div>
+        </div>
+        <div class="exp-date">May 2025 — June 2025</div>
+      </div>
+      <ul class="exp-list">
+        <li>Designed a Universal Shift Register (USR) in Verilog HDL — shift-left, shift-right, parallel load, and hold modes — following industry-standard RTL coding practices</li>
+        <li>Worked through the ASIC design flow and learned synthesis-ready RTL structuring and documentation conventions</li>
+        <li>Ran functional simulation using Icarus Verilog and waveform inspection in GTKWave to validate RTL behaviour</li>
+      </ul>
+      <div class="exp-tools">
+        <span class="tool-chip">Verilog HDL</span>
+        <span class="tool-chip">Icarus Verilog</span>
+        <span class="tool-chip">GTKWave</span>
+        <span class="tool-chip">Quartus</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">03</span>
+      <h2 class="sec-title">Projects</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="projects-grid">
+
+      <div class="proj-card reveal">
+        <div class="proj-label">Physical Design</div>
+        <div class="proj-icon">⬢</div>
+        <div class="proj-title">4-bit Up/Down Counter — Full RTL-to-GDS</div>
+        <div class="proj-desc">
+          Complete RTL-to-GDS flow on sky130A. Covers RTL coding in Verilog, logic synthesis with Yosys, floorplanning, pin placement, global &amp; detailed placement, CTS, global &amp; detailed routing, and DRC sign-off in KLayout. All steps driven by explicit TCL invocations in OpenROAD.
+        </div>
+        <div class="flow-steps">
+          <span class="fstep">RTL</span><span class="farrow">→</span>
+          <span class="fstep">Synthesis</span><span class="farrow">→</span>
+          <span class="fstep">Floorplan</span><span class="farrow">→</span>
+          <span class="fstep">P&amp;R</span><span class="farrow">→</span>
+          <span class="fstep">GDS</span>
+        </div>
+        <div class="exp-tools">
+          <span class="tool-chip">OpenROAD</span>
+          <span class="tool-chip">Yosys</span>
+          <span class="tool-chip">sky130A PDK</span>
+          <span class="tool-chip">KLayout</span>
+          <span class="tool-chip">TCL</span>
+        </div>
+      </div>
+
+      <div class="proj-card reveal">
+        <div class="proj-label">RTL Design</div>
+        <div class="proj-icon">◈</div>
+        <div class="proj-title">8-bit Barrel Shifter</div>
+        <div class="proj-desc">
+          Single-cycle 8-bit barrel shifter supporting logical left/right and rotational shift operations. Written as clean, synthesizable Verilog with full parametric control. Synthesized and mapped to FPGA fabric; timing and resource utilization analysed in Vivado.
+        </div>
+        <div class="flow-steps">
+          <span class="fstep">RTL</span><span class="farrow">→</span>
+          <span class="fstep">Synthesis</span><span class="farrow">→</span>
+          <span class="fstep">FPGA Map</span><span class="farrow">→</span>
+          <span class="fstep">Timing</span>
+        </div>
+        <div class="exp-tools">
+          <span class="tool-chip">Verilog HDL</span>
+          <span class="tool-chip">Xilinx Vivado</span>
+          <span class="tool-chip">GTKWave</span>
+        </div>
+      </div>
+
+      <div class="proj-card reveal">
+        <div class="proj-label">RTL Design</div>
+        <div class="proj-icon">◉</div>
+        <div class="proj-title">Universal Shift Register</div>
+        <div class="proj-desc">
+          Industry-intern project at eInfochips. Four-mode USR (shift-left, shift-right, parallel load, hold) designed with synthesis-ready RTL structure. Followed Arrow/eInfochips internal RTL coding and documentation standards throughout.
+        </div>
+        <div class="flow-steps">
+          <span class="fstep">Spec</span><span class="farrow">→</span>
+          <span class="fstep">RTL</span><span class="farrow">→</span>
+          <span class="fstep">Sim</span><span class="farrow">→</span>
+          <span class="fstep">Synthesis</span>
+        </div>
+        <div class="exp-tools">
+          <span class="tool-chip">Verilog HDL</span>
+          <span class="tool-chip">Icarus Verilog</span>
+          <span class="tool-chip">Quartus</span>
+        </div>
+      </div>
+
+      <div class="proj-card reveal">
+        <div class="proj-label">Physical Design</div>
+        <div class="proj-icon">⬡</div>
+        <div class="proj-title">CMOS Inverter — Transistor to Layout</div>
+        <div class="proj-desc">
+          Transistor-level CMOS inverter from schematic to DRC/LVS-clean layout on OpenPDK. DC sweep in ngspice to extract VTC, noise margins, and switching threshold. Layout drawn in Magic VLSI with full DRC and LVS sign-off.
+        </div>
+        <div class="flow-steps">
+          <span class="fstep">Schematic</span><span class="farrow">→</span>
+          <span class="fstep">SPICE Sim</span><span class="farrow">→</span>
+          <span class="fstep">Layout</span><span class="farrow">→</span>
+          <span class="fstep">DRC/LVS</span>
+        </div>
+        <div class="exp-tools">
+          <span class="tool-chip">Xschem</span>
+          <span class="tool-chip">ngSPICE</span>
+          <span class="tool-chip">Magic VLSI</span>
+          <span class="tool-chip">OpenPDK</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DESIGN FLOW -->
+<section id="flow">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">04</span>
+      <h2 class="sec-title">RTL-to-GDS Flow</h2>
+      <div class="sec-line"></div>
+    </div>
+    <p class="flow-intro reveal">The full ASIC backend flow I work through — each step driven by explicit TCL commands in OpenROAD on the sky130hd platform.</p>
+    <div class="flow-pipeline reveal">
+      <div class="fp-step">
+        <div class="fp-num">01</div>
+        <div class="fp-name">RTL</div>
+        <div class="fp-tool">Verilog HDL</div>
+        <div class="fp-desc">Synthesizable register-transfer level description of the design logic</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step">
+        <div class="fp-num">02</div>
+        <div class="fp-name">Synthesis</div>
+        <div class="fp-tool">Yosys</div>
+        <div class="fp-desc">Technology mapping to sky130hd standard cells; SDF generation</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step">
+        <div class="fp-num">03</div>
+        <div class="fp-name">Floorplan</div>
+        <div class="fp-tool">OpenROAD</div>
+        <div class="fp-desc">Die/core area, track creation, pin placement, power ring</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step">
+        <div class="fp-num">04</div>
+        <div class="fp-name">Placement</div>
+        <div class="fp-tool">OpenROAD</div>
+        <div class="fp-desc">Global placement → legalization → detailed placement</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step">
+        <div class="fp-num">05</div>
+        <div class="fp-name">CTS</div>
+        <div class="fp-tool">TritonCTS</div>
+        <div class="fp-desc">Clock tree synthesis for balanced skew and insertion delay</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step">
+        <div class="fp-num">06</div>
+        <div class="fp-name">Routing</div>
+        <div class="fp-tool">FastRoute / TritonRoute</div>
+        <div class="fp-desc">Global routing followed by detailed DRC-clean routing</div>
+      </div>
+      <div class="fp-conn"></div>
+      <div class="fp-step fp-step--highlight">
+        <div class="fp-num">07</div>
+        <div class="fp-name">GDS</div>
+        <div class="fp-tool">KLayout</div>
+        <div class="fp-desc">DEF→GDS stream-out; final DRC sign-off on sky130A rules</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">05</span>
+      <h2 class="sec-title">Skills</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="skills-grid reveal">
+      <div class="skill-group">
+        <div class="skill-group-title">RTL Design</div>
+        <div class="skill-items">
+          <div class="skill-item">Verilog HDL</div>
+          <div class="skill-item">Synthesizable RTL</div>
+          <div class="skill-item">TCL Scripting</div>
+          <div class="skill-item">Xilinx Vivado</div>
+          <div class="skill-item">Icarus Verilog</div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-title">Physical Design</div>
+        <div class="skill-items">
+          <div class="skill-item">OpenROAD</div>
+          <div class="skill-item">Yosys (Synthesis)</div>
+          <div class="skill-item">Floorplan / P&amp;R</div>
+          <div class="skill-item">CTS / Routing</div>
+          <div class="skill-item">KLayout (DRC)</div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-title">PDK &amp; Layout</div>
+        <div class="skill-items">
+          <div class="skill-item">sky130A PDK</div>
+          <div class="skill-item">Magic VLSI</div>
+          <div class="skill-item">Xschem</div>
+          <div class="skill-item">ngSPICE</div>
+          <div class="skill-item">OpenLANE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EDUCATION -->
+<section id="education">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">06</span>
+      <h2 class="sec-title">Education</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="edu-card reveal">
+      <div class="edu-year">
+        <strong>2026</strong>
+        2022–
+      </div>
+      <div>
+        <div class="edu-title">B.Tech in Electronics and Communication Engineering</div>
+        <div class="edu-inst">A. D. Patel Institute of Technology</div>
+        <div class="edu-details">
+          <span class="badge">CGPA: 8.69 / 10</span>
+          <span class="badge">Dept. Rank #1</span>
+        </div>
+        <p style="margin-top:16px; color:#6a9a92; font-size:14px; font-weight:300;">
+          Coursework: Digital Electronics · Analog Electronics · VLSI Design · Microprocessor &amp; Microcontroller
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACHIEVEMENTS -->
+<section id="achievements">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">07</span>
+      <h2 class="sec-title">Achievements</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="ach-grid reveal">
+      <div class="ach-card">
+        <div class="ach-num">01</div>
+        <div class="ach-text">
+          <strong>GATE 2025 — AIR 3643</strong>
+          Qualified Graduate Aptitude Test in Engineering (GATE) 2025 in Electronics and Communication Engineering with an All India Rank of 3643.
+        </div>
+      </div>
+      <div class="ach-card">
+        <div class="ach-num">02</div>
+        <div class="ach-text">
+          <strong>Department Rank 1</strong>
+          Ranked 1st in the department with a CGPA of 8.69/10, maintaining consistent top academic performance across all six semesters.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <div class="sec-header reveal">
+      <span class="sec-num">08</span>
+      <h2 class="sec-title">Contact</h2>
+      <div class="sec-line"></div>
+    </div>
+    <div class="contact-inner reveal">
+      <div>
+        <p class="contact-text">
+          Feel free to reach out — whether it's to discuss RTL design, the open-source ASIC flow, or anything VLSI-related.
+        </p>
+        <div class="contact-links">
+          <a href="mailto:kutubkhanjhabuawala@gmail.com" class="contact-link">
+            <span class="link-icon">✉</span>
+            kutubkhanjhabuawala@gmail.com
+          </a>
+          <a href="tel:+918799407694" class="contact-link">
+            <span class="link-icon">✆</span>
+            +91 8799407694
+          </a>
+          <a href="https://linkedin.com/in/kutubkhan-jhabuawala" target="_blank" class="contact-link">
+            <span class="link-icon">in</span>
+            Kutubkhan Jhabuawala
+          </a>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="t-red"></span>
+          <span class="t-yellow"></span>
+          <span class="t-green"></span>
+        </div>
+        <div class="term-line"><span class="term-prompt">$ </span><span class="term-cmd">cat about.txt</span></div>
+        <div class="term-line"><span class="term-out">  focus:  </span><span class="term-val">RTL Design + Physical Design</span></div>
+        <div class="term-line"><span class="term-out">  pdk:    </span><span class="term-val">sky130A (sky130hd)</span></div>
+        <div class="term-line"><span class="term-out">  tools:  </span><span class="term-val">OpenROAD · KLayout · Magic</span></div>
+        <div class="term-line" style="margin-top:8px"><span class="term-prompt">$ </span><span class="term-cmd">echo $GATE_RANK</span></div>
+        <div class="term-line"><span class="term-out">  </span><span class="term-val">AIR_3643_EC_2025</span></div>
+        <div class="term-line" style="margin-top:8px"><span class="term-prompt">$ </span><span class="term-cmd">_<span class="cursor"></span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2025 Kutubkhan Jhabuawala &nbsp;·&nbsp; RTL & Physical Design &nbsp;·&nbsp; sky130A</p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  reveals.forEach(r => observer.observe(r));
+</script>
+</body>
+</html>
