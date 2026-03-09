@@ -874,14 +874,87 @@
 
   /* ── RESPONSIVE ── */
   @media (max-width: 768px) {
-    nav { padding: 16px 24px; }
+    /* Nav */
+    nav { padding: 14px 20px; }
     .nav-links { display: none; }
-    .hero-inner { grid-template-columns: 1fr; padding: 0 24px; }
-    .hero-stats { flex-direction: row; flex-wrap: wrap; }
-    .container { padding: 0 24px; }
-    .about-grid, .projects-grid, .skills-grid,
-    .ach-grid, .contact-inner { grid-template-columns: 1fr; }
-    .skills-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Fix overflow globally */
+    body { overflow-x: hidden; }
+    * { max-width: 100%; }
+
+    /* Hero */
+    #hero { min-height: 100svh; padding: 80px 0 40px; align-items: flex-start; }
+    .hero-inner {
+      grid-template-columns: 1fr;
+      padding: 0 20px;
+      gap: 32px;
+    }
+    h1.hero-name {
+      font-size: clamp(36px, 11vw, 56px);
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .hero-sub { font-size: 14px; max-width: 100%; }
+    .hero-badges { gap: 6px; }
+    .badge { font-size: 10px; padding: 4px 10px; }
+    .hero-cta { flex-direction: column; gap: 10px; }
+    .btn { width: 100%; text-align: center; padding: 14px 20px; }
+
+    /* Hero stats — row on mobile */
+    .hero-stats {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .stat-card {
+      min-width: 0;
+      flex: 1;
+      padding: 16px;
+    }
+    .stat-num { font-size: 22px; }
+
+    /* Container */
+    .container { padding: 0 20px; }
+    section { padding: 64px 0; }
+
+    /* Section header */
+    .sec-title { font-size: 24px; }
+
+    /* Grids → single column */
+    .about-grid,
+    .projects-grid,
+    .skills-grid,
+    .ach-grid,
+    .contact-inner { grid-template-columns: 1fr; gap: 16px; }
+
+    /* Skills — keep 2 col if room */
+    .skills-grid { grid-template-columns: 1fr; }
+
+    /* Experience */
+    .exp-header { flex-direction: column; gap: 8px; }
+    .exp-card { padding: 24px 20px; }
+
+    /* Projects */
+    .proj-card { padding: 24px 20px; }
+
+    /* Flow pipeline */
+    .flow-pipeline { flex-direction: column; }
+    .fp-conn { width: 100%; height: 20px; }
+    .fp-conn::before { content: '↓'; }
+    .fp-step { min-width: 0; padding: 18px 16px; }
+
+    /* Education */
+    .edu-card {
+      grid-template-columns: 1fr;
+      padding: 24px 20px;
+      gap: 16px;
+    }
+
+    /* Terminal */
+    .terminal { padding: 18px 16px; font-size: 12px; }
+
+    /* Contact links */
+    .contact-link { padding: 12px 16px; font-size: 12px; }
   }
 </style>
 </head>
@@ -962,7 +1035,7 @@
       </div>
       <ul class="info-list">
         <li><span class="key">Location</span><span class="val">Anand, Gujarat, India</span></li>
-        <li><span class="key">Email</span><span class="val">kutubkhanjhabuawala@gmail.com</span></li>
+        <li><span class="key">Email</span><span class="val"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="533826272631383b323d393b3231263224323f3213343e323a3f7d303c3e">[email&#160;protected]</a></span></li>
         <li><span class="key">Phone</span><span class="val">+91 8799407694</span></li>
         <li><span class="key">Degree</span><span class="val">B.Tech ECE — 2022–2026</span></li>
         <li><span class="key">Focus</span><span class="val">VLSI / ASIC Design &amp; Verification</span></li>
@@ -1275,9 +1348,9 @@
           Feel free to reach out — whether it's to discuss RTL design, the open-source ASIC flow, or anything VLSI-related.
         </p>
         <div class="contact-links">
-          <a href="mailto:kutubkhanjhabuawala@gmail.com" class="contact-link">
+          <a href="/cdn-cgi/l/email-protection#670c121312050c0f06090d0f0605120610060b0627000a060e0b4904080a" class="contact-link">
             <span class="link-icon">✉</span>
-            kutubkhanjhabuawala@gmail.com
+            <span class="__cf_email__" data-cfemail="e48f919091868f8c858a8e8c8586918593858885a48389858d88ca878b89">[email&#160;protected]</span>
           </a>
           <a href="tel:+918799407694" class="contact-link">
             <span class="link-icon">✆</span>
@@ -1313,18 +1386,6 @@
   <p>© 2025 Kutubkhan Jhabuawala &nbsp;·&nbsp; RTL & Physical Design &nbsp;·&nbsp; sky130A</p>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   // Scroll reveal
-  const reveals = document.querySelectorAll('.reveal');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((e, i) => {
-      if (e.isIntersecting) {
-        setTimeout(() => e.target.classList.add('visible'), i * 80);
-        observer.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.08 });
-  reveals.forEach(r => observer.observe(r));
-</script>
-</body>
-</html>
+  c
